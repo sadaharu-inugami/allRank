@@ -1,4 +1,4 @@
-DEFAULT_EPS = 1e-10
+DEFAULT_EPS = 1e-6
 
 from .approxNDCG import *  # noqa F403 F401
 from .binary_listNet import *  # noqa F403 F401

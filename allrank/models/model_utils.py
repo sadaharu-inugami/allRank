@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import Any
 
 import numpy as np
@@ -57,4 +58,11 @@ def load_state_dict_from_file(path: str, device: Any):
     if is_gs_path(path):
         path = copy_file_to_local(path)
 
-    return torch.load(path, map_location=device)
+    state_dict = torch.load(path, map_location=device)
+    new_state_dict = OrderedDict()
+
+    for key, value in state_dict.items():
+        key_to_save = key[7:] if "module." in key else key
+        new_state_dict[key_to_save] = value
+
+    return new_state_dict

@@ -79,6 +79,8 @@ def run():
     model.to(dev)
 
     # load optimizer, loss and LR scheduler
+    # from allrank.models.optimizers import MADGRAD
+    # optimizer = MADGRAD(params=model.parameters(), **config.optimizer.args)
     optimizer = getattr(optim, config.optimizer.name)(params=model.parameters(), **config.optimizer.args)
     loss_func = partial(getattr(losses, config.loss.name), **config.loss.args)
     if config.lr_scheduler.name:

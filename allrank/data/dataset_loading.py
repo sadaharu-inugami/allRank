@@ -109,6 +109,7 @@ class LibSVMDataset(Dataset):
         _, indices, counts = np.unique(query_ids, return_index=True, return_counts=True)
         groups = np.cumsum(counts[np.argsort(indices)])
 
+        self.query_ids = dict(zip(indices, counts))
         self.X_by_qid = np.split(X, groups)[:-1]
         self.y_by_qid = np.split(y, groups)[:-1]
 

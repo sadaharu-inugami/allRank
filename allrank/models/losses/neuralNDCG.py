@@ -2,13 +2,13 @@ import torch
 
 from allrank.data.dataset_loading import PADDED_Y_VALUE
 from allrank.models.losses import DEFAULT_EPS
-from allrank.models.losses.loss_utils import deterministic_neural_sort, sinkhorn_scaling, stochastic_neural_sort
+from allrank.models.losses.loss_utils import deterministic_neural_sort, sinkhorn_scaling, stochastic_neural_sort, ot_neural_sort
 from allrank.models.metrics import dcg
 from allrank.models.model_utils import get_torch_device
 
 
-def neuralNDCG(y_pred, y_true, padded_value_indicator=PADDED_Y_VALUE, temperature=1., powered_relevancies=True, k=None,
-               stochastic=False, n_samples=32, beta=0.1, log_scores=True):
+def neuralNDCG(y_pred, y_true, padded_value_indicator=PADDED_Y_VALUE, temperature=.1, powered_relevancies=True, k=None,
+               stochastic=False, n_samples=32, beta=0.1, log_scores=True, use_optimal_transport=True):
     """
     NeuralNDCG loss introduced in "NeuralNDCG: Direct Optimisation of a Ranking Metric via Differentiable
     Relaxation of Sorting" - https://arxiv.org/abs/2102.07831. Based on the NeuralSort algorithm.
@@ -28,15 +28,19 @@ def neuralNDCG(y_pred, y_true, padded_value_indicator=PADDED_Y_VALUE, temperatur
 
     if k is None:
         k = y_true.shape[1]
-
     mask = (y_true == padded_value_indicator)
     # Choose the deterministic/stochastic variant
-    if stochastic:
+    if use_optimal_transport:
+        P_hat = ot_neural_sort(y_pred, tau=temperature, mask=mask).unsqueeze(0)
+    elif stochastic:
         P_hat = stochastic_neural_sort(y_pred.unsqueeze(-1), n_samples=n_samples, tau=temperature, mask=mask,
                                        beta=beta, log_scores=log_scores)
     else:
         P_hat = deterministic_neural_sort(y_pred.unsqueeze(-1), tau=temperature, mask=mask).unsqueeze(0)
 
+    # import gcsfs
+    # import pickle
+    # pickle.dump(y_pred.data.cpu().numpy(), gcsfs.GCSFileSystem().open("gs://kraken-task-data/MZHE-4010/test_ot_scores.pickle", "wb"))
     # Perform sinkhorn scaling to obtain doubly stochastic permutation matrices
     P_hat = sinkhorn_scaling(P_hat.view(P_hat.shape[0] * P_hat.shape[1], P_hat.shape[2], P_hat.shape[3]),
                              mask.repeat_interleave(P_hat.shape[0], dim=0), tol=1e-6, max_iter=50)
