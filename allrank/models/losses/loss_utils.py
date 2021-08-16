@@ -20,9 +20,6 @@ def sinkhorn_scaling(mat, mask=None, tol=1e-6, max_iter=50):
         mat = mat.masked_fill(mask[:, None, :] | mask[:, :, None], 0.0)
         mat = mat.masked_fill(mask[:, None, :] & mask[:, :, None], 1.0)
 
-    # import gcsfs
-    # pickle.dump(mat.data.cpu().numpy(), gcsfs.GCSFileSystem().open("gs://kraken-task-data/MZHE-4010/test_ot_perm_matrix.pickle", "wb"))
-
     for _ in range(max_iter):
         mat = mat / mat.sum(dim=1, keepdim=True).clamp(min=DEFAULT_EPS)
         mat = mat / mat.sum(dim=2, keepdim=True).clamp(min=DEFAULT_EPS)
